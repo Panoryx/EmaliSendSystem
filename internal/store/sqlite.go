@@ -421,22 +421,62 @@ func (s *Store) Message(ctx context.Context, id string) (domain.Message, error) 
 }
 
 // Messages 仅返回元数据，列表不读取或返回邮件正文。
-func (s *Store) Messages(ctx context.Context, owner string, page, size int) ([]domain.Message, error) {
-	rows, err := s.read.QueryContext(ctx, `SELECT id,owner,state,created,updated,next_at,attempts,actual_account,parent_id,body_expired FROM messages WHERE (?='' OR owner=?) ORDER BY created DESC,id DESC LIMIT ? OFFSET ?`, owner, owner, size, (page-1)*size)
+func (s *Store) Messages(ctx context.Context, owner string, page, size int, filter domain.MessageFilter) (domain.MessagePage, error) {
+	out := domain.MessagePage{Items: []domain.Message{}}
+	conditions := []string{"1=1"}
+	args := []any{}
+	// 条件片段来自固定代码，用户值只绑定为参数；所有权过滤不能被筛选覆盖。
+	if owner != "" {
+		conditions = append(conditions, "owner=?")
+		args = append(args, owner)
+	}
+	if filter.State != "" {
+		conditions = append(conditions, "state=?")
+		args = append(args, filter.State)
+	}
+	if filter.ID != "" {
+		conditions = append(conditions, "id=?")
+		args = append(args, filter.ID)
+	}
+	if filter.CreatedFrom > 0 {
+		conditions = append(conditions, "created>=?")
+		args = append(args, filter.CreatedFrom)
+	}
+	if filter.CreatedTo > 0 {
+		conditions = append(conditions, "created<=?")
+		args = append(args, filter.CreatedTo)
+	}
+	where := strings.Join(conditions, " AND ")
+	// 只读短事务确保总数和分页属于同一快照，不在此期间进行网络操作。
+	tx, err := s.read.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
-		return nil, err
+		return out, err
+	}
+	defer tx.Rollback()
+	if err = tx.QueryRowContext(ctx, "SELECT count(*) FROM messages WHERE "+where, args...).Scan(&out.Total); err != nil {
+		return out, err
+	}
+	pageArgs := append(append([]any{}, args...), size, (page-1)*size)
+	rows, err := tx.QueryContext(ctx, `SELECT id,owner,state,created,updated,next_at,attempts,actual_account,parent_id,body_expired FROM messages WHERE `+where+` ORDER BY created DESC,id DESC LIMIT ? OFFSET ?`, pageArgs...)
+	if err != nil {
+		return out, err
 	}
 	defer rows.Close()
-	out := []domain.Message{}
 	for rows.Next() {
 		var m domain.Message
 		err = rows.Scan(&m.ID, &m.Owner, &m.State, &m.Created, &m.Updated, &m.NextAt, &m.Attempts, &m.ActualAccount, &m.ParentID, &m.BodyExpired)
 		if err != nil {
-			return nil, err
+			return out, err
 		}
-		out = append(out, m)
+		out.Items = append(out.Items, m)
 	}
-	return out, rows.Err()
+	if err = rows.Err(); err != nil {
+		return out, err
+	}
+	if err = rows.Close(); err != nil {
+		return out, err
+	}
+	return out, tx.Commit()
 }
 
 // Cancel 使用数据库条件更新解决取消与领取之间的竞争。

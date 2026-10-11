@@ -18,7 +18,7 @@ type AccountRepository interface {
 type MessageRepository interface {
 	Enqueue(context.Context, domain.Message, string, string) (domain.Message, error)
 	Message(context.Context, string) (domain.Message, error)
-	Messages(context.Context, string, int, int) ([]domain.Message, error)
+	Messages(context.Context, string, int, int, domain.MessageFilter) (domain.MessagePage, error)
 	Cancel(context.Context, string, int64) error
 	Claim(context.Context, int64, domain.AccountSelector) (domain.Message, domain.Account, error)
 	Finish(context.Context, domain.Message, domain.Result, int64) error

@@ -93,6 +93,20 @@ type Message struct {
 	History       []Attempt `json:"attempts,omitempty"`
 }
 
+// MessageFilter 是任务元数据查询条件，时间范围采用 Unix 秒且包含两端。
+type MessageFilter struct {
+	State       State
+	ID          string
+	CreatedFrom int64
+	CreatedTo   int64
+}
+
+// MessagePage 在同一数据库快照中返回当前页与匹配总数。
+type MessagePage struct {
+	Items []Message
+	Total int
+}
+
 // Category 表达投递结论，不将未知结果当成普通失败。
 type Category string
 

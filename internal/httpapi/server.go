@@ -230,12 +230,17 @@ func (a *API) dispatch(w http.ResponseWriter, r *http.Request) {
 			a.failure(w, r, err)
 			return
 		}
+		filter, err := messageFilter(r)
+		if err != nil {
+			a.failure(w, r, err)
+			return
+		}
 		owner := t.ID
 		if t.Admin {
 			owner = ""
 		}
-		out, err := a.service.Messages.Messages(ctx, owner, page, size)
-		a.respond(w, r, 200, map[string]any{"items": out, "page": page, "page_size": size}, err)
+		out, err := a.service.Messages.Messages(ctx, owner, page, size, filter)
+		a.respond(w, r, 200, map[string]any{"items": out.Items, "total": out.Total, "page": page, "page_size": size}, err)
 	case resource == "messages" && id != "" && action == "" && r.Method == http.MethodGet:
 		out, err := a.service.OwnedMessage(ctx, t, id)
 		a.respond(w, r, 200, out, err)
@@ -288,6 +293,41 @@ func pagination(r *http.Request) (int, int, error) {
 		return 0, 0, domain.Fail(400, "invalid_page", "分页参数不合法")
 	}
 	return page, size, nil
+}
+
+// messageFilter 校验筛选值，SQL 层只接收已验证的业务条件。
+func messageFilter(r *http.Request) (domain.MessageFilter, error) {
+	q := r.URL.Query()
+	f := domain.MessageFilter{State: domain.State(q.Get("status")), ID: q.Get("id")}
+	invalid := domain.Fail(400, "invalid_filter", "任务筛选条件不合法")
+	switch f.State {
+	case "", domain.Queued, domain.Sending, domain.RetryWait, domain.Submitted, domain.Failed, domain.Unknown, domain.Cancelled:
+	default:
+		return f, invalid
+	}
+	if f.ID != "" {
+		if len(f.ID) != 32 {
+			return f, invalid
+		}
+		for _, c := range f.ID {
+			if !(c >= '0' && c <= '9' || c >= 'a' && c <= 'f') {
+				return f, invalid
+			}
+		}
+	}
+	for key, destination := range map[string]*int64{"created_from": &f.CreatedFrom, "created_to": &f.CreatedTo} {
+		if value := q.Get(key); value != "" {
+			n, err := strconv.ParseInt(value, 10, 64)
+			if err != nil || n <= 0 || n > 253402300799 {
+				return f, invalid
+			}
+			*destination = n
+		}
+	}
+	if f.CreatedFrom > 0 && f.CreatedTo > 0 && f.CreatedFrom > f.CreatedTo {
+		return f, invalid
+	}
+	return f, nil
 }
 func (a *API) taskReply(w http.ResponseWriter, r *http.Request, m domain.Message, err error) {
 	if err != nil {

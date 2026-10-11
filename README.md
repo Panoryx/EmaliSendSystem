@@ -1,5 +1,7 @@
 # EmailSendSystem
 
+任务列表支持筛选：`GET /api/v1/messages?status=queued&id=<完整任务ID>&created_from=<Unix秒>&created_to=<Unix秒>&page=1&page_size=20`。各筛选参数均可省略；状态和 ID 精确匹配，创建时间包含两端。响应新增 `total`，表示筛选及权限共同匹配的总数。发送 Token 的条件不能突破任务所有权限制。
+
 个人使用的 Go 邮件账号池后端。通过服务商 SMTP 465/587 发送，提供 REST API、持久化队列和自动账号选择。没有前端、附件、短信、定时发送及 OAuth。无需 Redis、MySQL 或 Docker。
 
 ## 快速启动：Windows / VS Code

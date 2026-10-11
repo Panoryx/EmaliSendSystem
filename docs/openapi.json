@@ -601,9 +601,16 @@
           },
           "page_size": {
             "type": "integer"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "所有筛选条件与任务所有权共同匹配的记录总数"
           }
         },
-        "required": [],
+        "required": [
+          "total"
+        ],
         "additionalProperties": false
       },
       "Stats": {
@@ -1542,7 +1549,7 @@
       },
       "get": {
         "operationId": "listMessages",
-        "summary": "发送 Token 只看自身任务；列表仅元数据，正文和尝试历史仅详情返回。",
+        "summary": "分页查询任务元数据，支持状态、完整任务 ID 和创建时间筛选；发送 Token 仅返回自身任务。",
         "security": [
           {
             "bearerAuth": []
@@ -1659,6 +1666,52 @@
               "minimum": 1,
               "maximum": 100,
               "default": 20
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "任务状态；省略表示全部",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "queued",
+                "sending",
+                "retry_wait",
+                "submitted",
+                "failed",
+                "unknown",
+                "cancelled"
+              ]
+            }
+          },
+          {
+            "name": "id",
+            "in": "query",
+            "description": "完整任务 ID，精确匹配",
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          },
+          {
+            "name": "created_from",
+            "in": "query",
+            "description": "创建时间边界，Unix 秒，包含此时刻；起点不得晚于终点",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 253402300799
+            }
+          },
+          {
+            "name": "created_to",
+            "in": "query",
+            "description": "创建时间边界，Unix 秒，包含此时刻；起点不得晚于终点",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 253402300799
             }
           }
         ]
