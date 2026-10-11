@@ -1,0 +1,2199 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "EmailSendSystem API",
+    "version": "1.0.0",
+    "description": "个人 SMTP 账号池。Bearer Token；JSON 最多 512KiB；时间为 Unix 秒。"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8080"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "AccountCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "host": {
+            "type": "string",
+            "maxLength": 253
+          },
+          "port": {
+            "type": "integer",
+            "enum": [
+              465,
+              587
+            ]
+          },
+          "tls": {
+            "type": "string",
+            "enum": [
+              "implicit",
+              "starttls"
+            ]
+          },
+          "username": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "secret": {
+            "type": "string",
+            "maxLength": 4096,
+            "writeOnly": true
+          },
+          "from": {
+            "type": "string",
+            "format": "email"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "per_minute": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "default": 2
+          },
+          "daily_limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 100
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "host",
+          "port",
+          "tls",
+          "username",
+          "secret",
+          "from"
+        ],
+        "additionalProperties": false
+      },
+      "AccountPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "host": {
+            "type": "string",
+            "maxLength": 253
+          },
+          "port": {
+            "type": "integer",
+            "enum": [
+              465,
+              587
+            ]
+          },
+          "tls": {
+            "type": "string",
+            "enum": [
+              "implicit",
+              "starttls"
+            ]
+          },
+          "username": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "secret": {
+            "type": "string",
+            "maxLength": 4096,
+            "writeOnly": true
+          },
+          "from": {
+            "type": "string",
+            "format": "email"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "per_minute": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "default": 2
+          },
+          "daily_limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 100
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "host": {
+            "type": "string",
+            "maxLength": 253
+          },
+          "port": {
+            "type": "integer",
+            "enum": [
+              465,
+              587
+            ]
+          },
+          "tls": {
+            "type": "string",
+            "enum": [
+              "implicit",
+              "starttls"
+            ]
+          },
+          "username": {
+            "type": "string",
+            "maxLength": 254
+          },
+          "from": {
+            "type": "string",
+            "format": "email"
+          },
+          "display_name": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "per_minute": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60,
+            "default": 2
+          },
+          "daily_limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "default": 100
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "transport": {
+            "const": "smtp"
+          },
+          "state": {
+            "enum": [
+              "available",
+              "cooling",
+              "reauthorize",
+              "disabled"
+            ]
+          },
+          "daily_used": {
+            "type": "integer"
+          },
+          "budget_day": {
+            "type": "string"
+          },
+          "last_used": {
+            "type": "integer"
+          },
+          "cooldown_until": {
+            "type": "integer"
+          },
+          "active": {
+            "type": "integer"
+          },
+          "revision": {
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "Result": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "enum": [
+              "accepted",
+              "temporary",
+              "authentication",
+              "rate_limited",
+              "permanent",
+              "uncertain"
+            ]
+          },
+          "stage": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "Input": {
+        "type": "object",
+        "properties": {
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "省略、null 或空字符串表示在授权范围内自动选择"
+          },
+          "to": {
+            "type": "string",
+            "format": "email",
+            "description": "仅一个裸邮件地址"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 998
+          },
+          "text": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "to",
+          "subject"
+        ],
+        "additionalProperties": false,
+        "description": "text 和 html 至少一种非空；UTF-8 正文合计最多 256KiB；不允许 From、附件或其他字段。"
+      },
+      "TaskAccepted": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "sending",
+              "retry_wait",
+              "submitted",
+              "failed",
+              "unknown",
+              "cancelled"
+            ]
+          },
+          "status_url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "status_url"
+        ],
+        "additionalProperties": false
+      },
+      "Attempt": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer"
+          },
+          "account_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "from": {
+            "type": "string",
+            "format": "email"
+          },
+          "message_id": {
+            "type": "string"
+          },
+          "started_at": {
+            "type": "integer"
+          },
+          "finished_at": {
+            "type": "integer"
+          },
+          "category": {
+            "enum": [
+              "accepted",
+              "temporary",
+              "authentication",
+              "rate_limited",
+              "permanent",
+              "uncertain"
+            ]
+          },
+          "stage": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "account_revision": {
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "Token": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "admin": {
+            "type": "boolean"
+          },
+          "account_ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          },
+          "revoked": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "TokenCreate": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "account_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            },
+            "maxItems": 128,
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "TokenCreated": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "$ref": "#/components/schemas/Token"
+          },
+          "secret": {
+            "type": "string",
+            "description": "仅创建时显示，使用 Bearer 鉴权"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "Resend": {
+        "type": "object",
+        "properties": {
+          "confirm_possible_duplicate": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "request_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "request_id"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "CancelResult": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "cancelled"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "RevokeResult": {
+        "type": "object",
+        "properties": {
+          "revoked": {
+            "const": true
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "Message": {
+        "type": "object",
+        "properties": {
+          "account_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "省略、null 或空字符串表示在授权范围内自动选择"
+          },
+          "to": {
+            "type": "string",
+            "format": "email",
+            "description": "仅一个裸邮件地址"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 998
+          },
+          "text": {
+            "type": "string"
+          },
+          "html": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "sending",
+              "retry_wait",
+              "submitted",
+              "failed",
+              "unknown",
+              "cancelled"
+            ]
+          },
+          "created_at": {
+            "type": "integer"
+          },
+          "next_at": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "type": "integer"
+          },
+          "attempt_count": {
+            "type": "integer"
+          },
+          "actual_account_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "parent_id": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{32}$"
+          },
+          "body_expired": {
+            "type": "boolean"
+          },
+          "attempts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attempt"
+            }
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "MessagePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "page_size": {
+            "type": "integer"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      },
+      "Stats": {
+        "type": "object",
+        "additionalProperties": true,
+        "description": "按任务状态分组的 count/body_bytes，以及 accounts、process(heap_alloc_bytes/goroutines)。预算计数属于 budget_day。"
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/accounts": {
+      "get": {
+        "operationId": "listAccounts",
+        "summary": "listAccounts",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Account"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "仅管理员 Token。"
+      },
+      "post": {
+        "operationId": "createAccount",
+        "summary": "createAccount",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "仅管理员 Token。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}": {
+      "patch": {
+        "operationId": "patchAccount",
+        "summary": "未提供字段保持原值；空 secret 不覆盖授权码；版本冲突需重新读取后重试。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "仅管理员 Token。未提供字段保持原值；空 secret 不覆盖授权码；版本冲突需重新读取后重试。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountPatch"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/accounts/{id}/test": {
+      "post": {
+        "operationId": "testAccount",
+        "summary": "只测试 TLS 和认证，不发送邮件，也不更新账号健康状态。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "仅管理员 Token。只测试 TLS 和认证，不发送邮件，也不更新账号健康状态。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/tokens": {
+      "get": {
+        "operationId": "listTokens",
+        "summary": "listTokens",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Token"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "仅管理员 Token。"
+      },
+      "post": {
+        "operationId": "createToken",
+        "summary": "createToken",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenCreated"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "仅管理员 Token。",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TokenCreate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tokens/{id}": {
+      "delete": {
+        "operationId": "revokeToken",
+        "summary": "管理员身份不可撤销；排队中的撤销身份任务会失败，进行中的发送不强制中断。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokeResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "仅管理员 Token。管理员身份不可撤销；排队中的撤销身份任务会失败，进行中的发送不强制中断。",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/messages": {
+      "post": {
+        "operationId": "submitMessage",
+        "summary": "落库成功才返回 202；SMTP accepted 不等于收件箱到达。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskAccepted"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "任务状态地址"
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "同 Token 幂等，任务保留期 30 天"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Input"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listMessages",
+        "summary": "发送 Token 只看自身任务；列表仅元数据，正文和尝试历史仅详情返回。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessagePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100000,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/messages/{id}": {
+      "get": {
+        "operationId": "getMessage",
+        "summary": "按任务所有权过滤。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/messages/{id}/cancel": {
+      "post": {
+        "operationId": "cancelMessage",
+        "summary": "仅 queued/retry_wait 可取消，其余状态返回 409。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/messages/{id}/resend": {
+      "post": {
+        "operationId": "resendMessage",
+        "summary": "仅 failed/unknown；unknown 必须确认可能重复。正文过期返回 409。创建关联新任务。",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskAccepted"
+                }
+              }
+            },
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                },
+                "description": "任务状态地址"
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{32}$"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "description": "同 Token 幂等，任务保留期 30 天"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Resend"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats": {
+      "get": {
+        "operationId": "getStats",
+        "summary": "getStats",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Stats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "业务错误或容量限制，参见 error.code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "仅管理员 Token。"
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "healthLive",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "健康",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "未就绪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "healthReady",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "健康",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "未就绪",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

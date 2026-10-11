@@ -1,0 +1,44 @@
+{
+  "environment": "Ubuntu 20.04 WSL amd64 / Go 1.27.2; process affinity limited to 2 logical CPUs; host RAM not capped to 2GB; no real SMTP traffic",
+  "idle_working_set_bytes": 15052800,
+  "peak_working_set_bytes": 27967488,
+  "final_working_set_bytes": 27967488,
+  "paced": {
+    "requests": 200,
+    "rate_per_second": 20,
+    "client_pool": 100,
+    "payload_text_bytes": 1024,
+    "statuses": {
+      "202": 200
+    },
+    "p50_ms": 6.944260999997454,
+    "p95_ms": 8.140628999996125,
+    "max_ms": 29.30845400000237
+  },
+  "burst_100": {
+    "statuses": {
+      "202": 42,
+      "429": 55,
+      "503": 3
+    }
+  },
+  "fill": {
+    "requests": 850,
+    "seconds": 43.49980994299999,
+    "statuses": {
+      "202": 758,
+      "503": 92
+    }
+  },
+  "stats": {
+    "accounts": [],
+    "process": {
+      "goroutines": 14,
+      "heap_alloc_bytes": 2540360
+    },
+    "queued": {
+      "body_bytes": 1024000,
+      "count": 1000
+    }
+  }
+}

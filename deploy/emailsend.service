@@ -1,0 +1,29 @@
+[Unit]
+Description=EmailSendSystem backend
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=emailsend
+Group=emailsend
+WorkingDirectory=/opt/emailsend
+ExecStart=/opt/emailsend/emailsend serve -config /opt/emailsend/config.json
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=75
+MemoryMax=256M
+TasksMax=128
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/emailsend
+StandardOutput=journal
+StandardError=journal
+LogRateLimitIntervalSec=30s
+LogRateLimitBurst=200
+
+[Install]
+WantedBy=multi-user.target

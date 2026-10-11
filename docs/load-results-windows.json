@@ -1,0 +1,43 @@
+{
+  "environment": "Windows amd64 / Go 1.27.2; process affinity limited to 2 logical CPUs; not a Linux 2GB host",
+  "idle_working_set_bytes": 12333056,
+  "peak_working_set_bytes": 26136576,
+  "final_working_set_bytes": 26136576,
+  "paced": {
+    "requests": 200,
+    "rate_per_second": 20,
+    "client_pool": 100,
+    "payload_text_bytes": 1024,
+    "statuses": {
+      "202": 200
+    },
+    "p50_ms": 12.394599999999034,
+    "p95_ms": 19.41740000000003,
+    "max_ms": 95.85109999999997
+  },
+  "burst_100": {
+    "statuses": {
+      "202": 40,
+      "429": 60
+    }
+  },
+  "fill": {
+    "requests": 850,
+    "seconds": 43.493520000000004,
+    "statuses": {
+      "202": 760,
+      "503": 90
+    }
+  },
+  "stats": {
+    "accounts": [],
+    "process": {
+      "goroutines": 14,
+      "heap_alloc_bytes": 1102944
+    },
+    "queued": {
+      "body_bytes": 1024000,
+      "count": 1000
+    }
+  }
+}

@@ -1,0 +1,9 @@
+/data/
+/bin/
+/config.json
+*.db*
+*.key
+*.token
+*.exe
+*.log
+/coverage.out

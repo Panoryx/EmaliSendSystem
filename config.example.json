@@ -1,0 +1,13 @@
+{
+  "listen": "127.0.0.1:8080",
+  "data_dir": "data",
+  "workers": 4,
+  "http_active": 64,
+  "queue_count": 1000,
+  "queue_bytes": 33554432,
+  "account_cap": 128,
+  "token_cap": 256,
+  "token_rate": 20,
+  "token_burst": 40,
+  "memory_limit_bytes": 134217728
+}
