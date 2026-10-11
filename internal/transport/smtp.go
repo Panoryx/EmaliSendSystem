@@ -124,10 +124,12 @@ func (s *SMTP) Send(ctx context.Context, a domain.Account, secret string, m doma
 	if client == nil {
 		return result
 	}
-	if err := client.Mail(a.From); err != nil {
+	// go-mail 的低层 Client 不像标准库那样自动添加尖括号。
+	// SMTP 信封地址必须使用 <addr>，否则认证成功后仍会被服务商拒绝。
+	if err := client.Mail("<" + a.From + ">"); err != nil {
 		return classify(err, "mail", false)
 	}
-	if err := client.Rcpt(m.To); err != nil {
+	if err := client.Rcpt("<" + m.To + ">"); err != nil {
 		return classify(err, "rcpt", false)
 	}
 	writer, err := client.Data()

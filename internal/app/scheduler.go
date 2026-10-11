@@ -96,7 +96,8 @@ func (s *Scheduler) worker(ctx context.Context) {
 			s.log.Error("task result persistence failed", "task_id", m.ID)
 			return
 		}
-		s.log.Info("mail attempt finished", "task_id", m.ID, "account_id", a.ID, "category", result.Category)
+		// 仅记录稳定阶段与错误码，便于诊断；不记录认证信息、正文及上游原始回复。
+		s.log.Info("mail attempt finished", "task_id", m.ID, "account_id", a.ID, "category", result.Category, "stage", result.Stage, "code", result.Code)
 	}
 }
 func (s *Scheduler) maintenance(ctx context.Context) {

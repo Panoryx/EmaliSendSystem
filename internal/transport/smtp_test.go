@@ -92,8 +92,17 @@ func smtpFixture(t *testing.T, mode string, startTLS bool) (*SMTP, domain.Accoun
 				}
 			case strings.HasPrefix(cmd, "MAIL FROM"):
 				mailCount.Add(1)
+				// 服务商按 SMTP path 语法校验信封，裸地址不能被宽松夹具放过。
+				if cmd != "MAIL FROM:<sender@example.com>" {
+					fmt.Fprint(conn, "502 malformed envelope sender\r\n")
+					continue
+				}
 				fmt.Fprint(conn, "250 ok\r\n")
 			case strings.HasPrefix(cmd, "RCPT TO"):
+				if cmd != "RCPT TO:<receiver@example.com>" {
+					fmt.Fprint(conn, "502 malformed envelope recipient\r\n")
+					continue
+				}
 				if mode == "rcpt" {
 					fmt.Fprint(conn, "550 no such user\r\n")
 				} else if mode == "limit" {
@@ -178,6 +187,24 @@ func TestSMTPTestDoesNotSend(t *testing.T) {
 		})
 	}
 }
+
+// TestSMTPEnvelopePaths 覆盖两种 TLS 模式下完整的信封提交，夹具拒绝裸地址。
+func TestSMTPEnvelopePaths(t *testing.T) {
+	for _, startTLS := range []bool{false, true} {
+		t.Run(fmt.Sprint(startTLS), func(t *testing.T) {
+			s, a, count := smtpFixture(t, "ok", startTLS)
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			defer cancel()
+			result := s.Send(ctx, a, "test-only-secret", domain.Message{Input: domain.Input{
+				To: "receiver@example.com", Subject: "信封格式回归", Text: "仅在本地测试投递",
+			}}, "envelope-test@example.com")
+			if result.Category != domain.Accepted || result.Stage != "data_ack" || count.Load() != 1 {
+				t.Fatalf("SMTP envelope rejected: %#v, MAIL count=%d", result, count.Load())
+			}
+		})
+	}
+}
+
 func TestCertificateVerification(t *testing.T) {
 	s, a, _ := smtpFixture(t, "ok", false)
 	s.Roots = x509.NewCertPool()
